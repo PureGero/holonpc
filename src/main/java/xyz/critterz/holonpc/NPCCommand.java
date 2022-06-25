@@ -63,9 +63,6 @@ public class NPCCommand implements CommandExecutor {
         player.sendMessage(Component.text("/" + label + " create").color(NamedTextColor.GREEN)
                 .append(Component.text(" [name] [x] [y] [z] [yaw] [pitch] [skinUrl]").color(NamedTextColor.DARK_GREEN)));
         player.sendMessage(Component.text("/" + label + " remove").color(NamedTextColor.GREEN));
-//        player.sendMessage(Component.text("/" + label + " move").color(NamedTextColor.GREEN)
-//                .append(Component.text(" [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
-//        player.sendMessage(Component.text("/" + label + " select").color(NamedTextColor.GREEN));
     }
 
     private void create(Player player, String label, String[] args) {
@@ -112,6 +109,7 @@ public class NPCCommand implements CommandExecutor {
         NPC npc = new NPC(plugin, location.getWorld(), UUID.randomUUID(), name, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         plugin.getNPCManager().registerNPC(npc);
         npc.showToAllNearbyPlayers();
+        plugin.getConfigLoader().addNPC(npc);
 
         player.sendMessage(Component.text("Created npc " + name).color(NamedTextColor.GREEN));
 
@@ -140,6 +138,7 @@ public class NPCCommand implements CommandExecutor {
 
         npc.hideFromAllNearbyPlayers();
         plugin.getNPCManager().unregisterNPC(npc);
+        plugin.getConfigLoader().removeNPC(npc);
 
         player.sendMessage(Component.text("Removed npc " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
     }
@@ -193,8 +192,11 @@ public class NPCCommand implements CommandExecutor {
                     gameProfile.getProperties().put(property.getName(), new Property(property.getName(), property.getValue(), property.getSignature()));
                     npc.hideFromAllNearbyPlayers();
                     npc.showToAllNearbyPlayers();
+                    plugin.getConfigLoader().removeNPC(npc);
+                    plugin.getConfigLoader().addNPC(npc);
                     player.sendMessage(Component.text("Skin has been applied to NPC " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
                 } catch (SkinRequestException e) {
+                    e.printStackTrace();
                     player.sendMessage(Component.text("Error: " + e.getClass().getSimpleName() + ": " + e.getMessage()).color(NamedTextColor.RED));
                 }
             });

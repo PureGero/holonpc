@@ -25,7 +25,7 @@ public class NPC {
     public NPC(HoloNPCPlugin plugin, World world, UUID uuid, @Nullable String name, double x, double y, double z, float yaw, float pitch) {
         this.plugin = plugin;
 
-        if (name == null) {
+        if (name == null || name.equals("HoloNPC")) {
             name = "HoloNPC";
             Team team = plugin.getServer().getScoreboardManager().getMainScoreboard().getTeam("npcs");
             if (team == null) {
