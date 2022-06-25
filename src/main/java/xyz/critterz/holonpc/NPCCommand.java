@@ -39,6 +39,8 @@ public class NPCCommand implements CommandExecutor {
         try {
             if (subcommand.equals("create")) {
                 create(player, label, subargs);
+            } else if (subcommand.equals("delete") || subcommand.equals("remove")) {
+                delete(player, label, subargs);
             } else {
                 sendHelp(player, label);
                 return false;
@@ -88,12 +90,37 @@ public class NPCCommand implements CommandExecutor {
         player.sendMessage(Component.text("Created npc " + name).color(NamedTextColor.GREEN));
     }
 
+    private void delete(Player player, String label, String[] args) {
+        NPC npc = getSelectedNPC(player);
+
+        if (npc == null) {
+            player.sendMessage(Component.text("You must be standing next to an npc to delete them.").color(NamedTextColor.RED));
+            return;
+        }
+
+        npc.hideFromAllNearbyPlayers();
+        plugin.getNPCManager().unregisterNPC(npc);
+
+        player.sendMessage(Component.text("Deleted npc " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
+    }
+
     private double parseCenteredDouble(String number) {
         if (number.contains(".")) {
             return Double.parseDouble(number);
         } else {
             return Integer.parseInt(number) + 0.5;
         }
+    }
+
+    private NPC getSelectedNPC(Player player) {
+        UUID selectedUUID = selectedNPCs.remove(player.getUniqueId());
+
+        if (selectedUUID != null) {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.sendMessage(Component.text("Unselected NPC").color(NamedTextColor.GREEN)), 1);
+            return plugin.getNPCManager().getNPC(selectedUUID);
+        }
+
+        return getNearestNPC(player.getLocation());
     }
 
     private NPC getNearestNPC(Location location) {

@@ -102,4 +102,8 @@ public class NPCManager {
             nearNPC.lookAt(player);
         }
     }
+
+    public NPC getNPC(UUID uuid) {
+        return npcs.get(uuid);
+    }
 }
