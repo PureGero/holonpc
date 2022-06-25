@@ -3,6 +3,9 @@ package xyz.critterz.holonpc;
 import com.github.puregero.multilib.MultiLib;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.bukkit.World;
@@ -58,6 +61,11 @@ public class NPC {
         // Remove npc from tab list
         ClientboundPlayerInfoPacket removePlayerInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, nmsPlayer);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> connection.send(removePlayerInfoPacket), 100);
+
+        //Add second skin layer
+        SynchedEntityData watcher = nmsPlayer.getEntityData();
+        watcher.set(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE), (byte) 126);
+        connection.send(new ClientboundSetEntityDataPacket(bukkitPlayer.getEntityId(), watcher, true));
     }
 
     public void showToAllNearbyPlayers() {
@@ -71,7 +79,7 @@ public class NPC {
 
     public void hideFrom(Player player) {
         ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
-        connection.send(new ClientboundRemoveEntitiesPacket(nmsPlayer.getId()));
+        connection.send(new ClientboundRemoveEntitiesPacket(bukkitPlayer.getEntityId()));
     }
 
     public void hideFromAllNearbyPlayers() {
