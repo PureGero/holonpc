@@ -1,5 +1,6 @@
 package xyz.critterz.holonpc;
 
+import com.github.puregero.multilib.MultiLib;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,7 @@ import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.Set;
 import java.util.UUID;
 
 public class NPC {
@@ -42,9 +44,27 @@ public class NPC {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> connection.send(removePlayerInfoPacket), 20);
     }
 
+    public void showToAllNearbyPlayers() {
+        for (Player player : MultiLib.getLocalOnlinePlayers()) {
+            Set<NPC> npcs = plugin.getNPCManager().getVisibleNPCs(player.getLocation());
+            if (npcs.contains(this)) {
+                showTo(player);
+            }
+        }
+    }
+
     public void hideFrom(Player player) {
         ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
         connection.send(new ClientboundRemoveEntitiesPacket(nmsPlayer.getId()));
+    }
+
+    public void hideFromAllNearbyPlayers() {
+        for (Player player : MultiLib.getLocalOnlinePlayers()) {
+            Set<NPC> npcs = plugin.getNPCManager().getVisibleNPCs(player.getLocation());
+            if (npcs.contains(this)) {
+                hideFrom(player);
+            }
+        }
     }
 
     public void lookAt(Player player) {

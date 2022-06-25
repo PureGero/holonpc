@@ -5,3 +5,19 @@ main: ${project.groupId}.${project.name}Plugin
 author: PureGero
 api-version: 1.18
 load: STARTUP
+commands:
+  npc:
+    description: NPC Command
+permissions:
+  npc.create:
+    description: Create an NPC
+    default: op
+  npc.remove:
+    description: Remove an NPC
+    default: op
+  npc.move:
+    description: Move an NPC
+    default: op
+  npc.select:
+    description: Select an NPC
+    default: true
