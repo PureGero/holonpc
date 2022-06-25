@@ -17,7 +17,6 @@ public class HoloNPCPlugin extends JavaPlugin {
         configLoader = new NPCConfigLoader(this);
         new NPCListener(this);
         new NPCCommand(this);
-        new NPCSyncer(this);
     }
 
     @Override
