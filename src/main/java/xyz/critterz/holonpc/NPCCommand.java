@@ -1,7 +1,12 @@
 package xyz.critterz.holonpc;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.skinsrestorer.api.SkinsRestorerAPI;
+import net.skinsrestorer.api.exception.SkinRequestException;
+import net.skinsrestorer.api.property.IProperty;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -56,7 +61,7 @@ public class NPCCommand implements CommandExecutor {
     private void sendHelp(Player player, String label) {
         player.sendMessage(Component.text(" --- --- === HoloNPC Commands === --- ---").color(NamedTextColor.GREEN));
         player.sendMessage(Component.text("/" + label + " create").color(NamedTextColor.GREEN)
-                .append(Component.text(" <name> [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
+                .append(Component.text(" [name] [x] [y] [z] [yaw] [pitch] [skinUrl]").color(NamedTextColor.DARK_GREEN)));
         player.sendMessage(Component.text("/" + label + " remove").color(NamedTextColor.GREEN));
 //        player.sendMessage(Component.text("/" + label + " move").color(NamedTextColor.GREEN)
 //                .append(Component.text(" [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
@@ -69,13 +74,24 @@ public class NPCCommand implements CommandExecutor {
             return;
         }
 
-        if (args.length < 1) {
-            player.sendMessage(Component.text("Usage: /" + label + " create <name> [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.RED));
-            return;
+        String name = null;
+        String skinUrl = null;
+        Location location = player.getLocation();
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].toLowerCase().startsWith("http") && args[i].contains("://")) {
+                skinUrl = args[i];
+                String[] oldArgs = args;
+                args = new String[oldArgs.length - 1];
+                System.arraycopy(oldArgs, 0, args, 0, i);
+                System.arraycopy(oldArgs, i + 1, args, i, args.length - i);
+                break;
+            }
         }
 
-        String name = args[0];
-        Location location = player.getLocation();
+        if (args.length >= 1) {
+            name = args[0];
+        }
         if (args.length >= 4) {
             location.setX(parseCenteredDouble(args[1]));
             location.setY(Double.parseDouble(args[2]));
@@ -88,11 +104,25 @@ public class NPCCommand implements CommandExecutor {
             location.setPitch(Float.parseFloat(args[5]));
         }
 
+        if (name != null && name.length() > 16) {
+            player.sendMessage(Component.text("Name too long: " + name).color(NamedTextColor.RED));
+            return;
+        }
+
         NPC npc = new NPC(plugin, location.getWorld(), UUID.randomUUID(), name, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         plugin.getNPCManager().registerNPC(npc);
         npc.showToAllNearbyPlayers();
 
         player.sendMessage(Component.text("Created npc " + name).color(NamedTextColor.GREEN));
+
+        if (skinUrl != null) {
+            if (!player.hasPermission("npc.setskin")) {
+                player.sendMessage(Component.text("Insufficient permissions to set NPC skin").color(NamedTextColor.RED));
+                return;
+            }
+
+            setSkin(player, npc, skinUrl);
+        }
     }
 
     private void remove(Player player, String label, String[] args) {
@@ -150,5 +180,27 @@ public class NPCCommand implements CommandExecutor {
         }
 
         return nearestNPC;
+    }
+
+    public void setSkin(Player player, NPC npc, String url) {
+        try {
+            Class.forName("net.skinsrestorer.api.SkinsRestorerAPI"); // Check SkinsRestorer is installed
+            player.sendMessage(Component.text("Downloading skin...").color(NamedTextColor.GREEN));
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    IProperty property = SkinsRestorerAPI.getApi().genSkinUrl(url, null);
+                    GameProfile gameProfile = npc.getProfile();
+                    gameProfile.getProperties().put(property.getName(), new Property(property.getName(), property.getValue(), property.getSignature()));
+                    npc.hideFromAllNearbyPlayers();
+                    npc.showToAllNearbyPlayers();
+                    player.sendMessage(Component.text("Skin has been applied to NPC " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
+                } catch (SkinRequestException e) {
+                    player.sendMessage(Component.text("Error: " + e.getClass().getSimpleName() + ": " + e.getMessage()).color(NamedTextColor.RED));
+                }
+            });
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            player.sendMessage(Component.text("You must have SkinsRestorer installed to set NPC skins from a url").color(NamedTextColor.RED));
+        }
     }
 }

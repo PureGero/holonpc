@@ -5,13 +5,14 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.UUID;
 
@@ -21,8 +22,19 @@ public class NPC {
     private final ServerPlayer nmsPlayer;
     private final Player bukkitPlayer;
 
-    public NPC(HoloNPCPlugin plugin, World world, UUID uuid, String name, double x, double y, double z, float yaw, float pitch) {
+    public NPC(HoloNPCPlugin plugin, World world, UUID uuid, @Nullable String name, double x, double y, double z, float yaw, float pitch) {
         this.plugin = plugin;
+
+        if (name == null) {
+            name = "HoloNPC";
+            Team team = plugin.getServer().getScoreboardManager().getMainScoreboard().getTeam("npcs");
+            if (team == null) {
+                team = plugin.getServer().getScoreboardManager().getMainScoreboard().registerNewTeam("npcs");
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            }
+            team.addEntry(name);
+        }
+
         nmsPlayer = new ServerPlayer(((CraftWorld) world).getHandle().getServer(), ((CraftWorld) world).getHandle(), new GameProfile(uuid, name));
         nmsPlayer.absMoveTo(x, y, z, yaw, pitch);
         bukkitPlayer = nmsPlayer.getBukkitEntity();
@@ -30,6 +42,10 @@ public class NPC {
 
     public Player getPlayer() {
         return bukkitPlayer;
+    }
+
+    public GameProfile getProfile() {
+        return nmsPlayer.gameProfile;
     }
 
     public void showTo(Player player) {

@@ -21,3 +21,6 @@ permissions:
   npc.select:
     description: Select an NPC
     default: true
+  npc.setskin:
+    description: Set an NPCs skin
+    default: op
