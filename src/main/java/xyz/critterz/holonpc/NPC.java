@@ -57,7 +57,7 @@ public class NPC {
 
         // Remove npc from tab list
         ClientboundPlayerInfoPacket removePlayerInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, nmsPlayer);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> connection.send(removePlayerInfoPacket), 20);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> connection.send(removePlayerInfoPacket), 100);
     }
 
     public void showToAllNearbyPlayers() {
