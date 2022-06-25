@@ -40,7 +40,7 @@ public class NPCCommand implements CommandExecutor {
             if (subcommand.equals("create")) {
                 create(player, label, subargs);
             } else if (subcommand.equals("delete") || subcommand.equals("remove")) {
-                delete(player, label, subargs);
+                remove(player, label, subargs);
             } else {
                 sendHelp(player, label);
                 return false;
@@ -57,13 +57,18 @@ public class NPCCommand implements CommandExecutor {
         player.sendMessage(Component.text(" --- --- === HoloNPC Commands === --- ---").color(NamedTextColor.GREEN));
         player.sendMessage(Component.text("/" + label + " create").color(NamedTextColor.GREEN)
                 .append(Component.text(" <name> [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
-        player.sendMessage(Component.text("/" + label + " delete").color(NamedTextColor.GREEN));
-        player.sendMessage(Component.text("/" + label + " move").color(NamedTextColor.GREEN)
-                .append(Component.text(" [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
-        player.sendMessage(Component.text("/" + label + " select").color(NamedTextColor.GREEN));
+        player.sendMessage(Component.text("/" + label + " remove").color(NamedTextColor.GREEN));
+//        player.sendMessage(Component.text("/" + label + " move").color(NamedTextColor.GREEN)
+//                .append(Component.text(" [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.DARK_GREEN)));
+//        player.sendMessage(Component.text("/" + label + " select").color(NamedTextColor.GREEN));
     }
 
     private void create(Player player, String label, String[] args) {
+        if (!player.hasPermission("npc.create")) {
+            player.sendMessage(Component.text("Insufficient permissions").color(NamedTextColor.RED));
+            return;
+        }
+
         if (args.length < 1) {
             player.sendMessage(Component.text("Usage: /" + label + " create <name> [x] [y] [z] [yaw] [pitch]").color(NamedTextColor.RED));
             return;
@@ -90,7 +95,12 @@ public class NPCCommand implements CommandExecutor {
         player.sendMessage(Component.text("Created npc " + name).color(NamedTextColor.GREEN));
     }
 
-    private void delete(Player player, String label, String[] args) {
+    private void remove(Player player, String label, String[] args) {
+        if (!player.hasPermission("npc.remove")) {
+            player.sendMessage(Component.text("Insufficient permissions").color(NamedTextColor.RED));
+            return;
+        }
+
         NPC npc = getSelectedNPC(player);
 
         if (npc == null) {
@@ -101,7 +111,7 @@ public class NPCCommand implements CommandExecutor {
         npc.hideFromAllNearbyPlayers();
         plugin.getNPCManager().unregisterNPC(npc);
 
-        player.sendMessage(Component.text("Deleted npc " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
+        player.sendMessage(Component.text("Removed npc " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
     }
 
     private double parseCenteredDouble(String number) {
