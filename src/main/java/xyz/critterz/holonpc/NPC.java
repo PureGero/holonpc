@@ -3,29 +3,39 @@ package xyz.critterz.holonpc;
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
+import com.github.retrooper.packetevents.protocol.player.Equipment;
+import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRotation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import it.unimi.dsi.fastutil.Pair;
+import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 public class NPC {
 
@@ -35,6 +45,10 @@ public class NPC {
     private final HashMap<String, TextureProperty> textures = new HashMap<>();
     private final int entityId;
     private Location location;
+    private final HashSet<UUID> lookingAt = new HashSet<>();
+    private final List<Pair<Plugin, BiConsumer<NPC, Player>>> lookAtListeners = new ArrayList<>();
+    private final List<Pair<Plugin, BiConsumer<NPC, Player>>> clickListeners = new ArrayList<>();
+    private final HashMap<EquipmentSlot, Equipment> equipment = new HashMap<>();
 
     public NPC(HoloNPCPlugin plugin, World world, UUID uuid, @Nullable String name, double x, double y, double z, float yaw, float pitch) {
         this.plugin = plugin;
@@ -53,10 +67,17 @@ public class NPC {
         this.name = name;
         this.entityId = new Random(this.uuid.getLeastSignificantBits() ^ this.uuid.getMostSignificantBits()).nextInt();
         this.location = new Location(world, x, y, z, yaw, pitch);
+
+        this.addClickListener(plugin, (npc, player) -> player.sendMessage(Component.text("You have clicked " + npc.getEntityId())));
+        this.addLookAtListener(plugin, (npc, player) -> player.sendMessage(Component.text("You are looking at " + npc.getEntityId())));
     }
 
     public String getName() {
         return name;
+    }
+
+    public int getEntityId() {
+        return entityId;
     }
 
     public UUID getUniqueId() {
@@ -65,6 +86,16 @@ public class NPC {
 
     public Location getLocation() {
         return location;
+    }
+
+    public void setEquipment(org.bukkit.inventory.EquipmentSlot slot, @Nullable ItemStack item) {
+        EquipmentSlot packetSlot = EquipmentSlot.values()[slot.ordinal()];
+        if (item == null) {
+            equipment.remove(packetSlot);
+        } else {
+            Equipment equipment = new Equipment(packetSlot, SpigotConversionUtil.fromBukkitItemStack(item));
+            this.equipment.put(packetSlot, equipment);
+        }
     }
 
     public Map<String, TextureProperty> getTextures() {
@@ -76,33 +107,41 @@ public class NPC {
     }
 
     public void showTo(Player player) {
-        WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(
+        // Set skin and username
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerPlayerInfo(
                 WrapperPlayServerPlayerInfo.Action.ADD_PLAYER,
                 new WrapperPlayServerPlayerInfo.PlayerData(Component.text(name), new UserProfile(uuid, name, new ArrayList<>(textures.values())), GameMode.SURVIVAL, 0)
-        );
+        ));
 
-        WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(
+        // Spawn entity
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerSpawnPlayer(
                 entityId,
                 uuid,
-                new com.github.retrooper.packetevents.protocol.world.Location(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch()),
-                new PlayerDataProvider.PlayerBuilder<>(new PlayerDataProvider()).skinParts(SkinSection.ALL).build().encode()
-        );
+                SpigotConversionUtil.fromBukkitLocation(location),
+                new PlayerDataProvider.PlayerBuilder<>(new PlayerDataProvider()).skinPartsMask((byte) 126).build().encode()
+        ));
 
-        WrapperPlayServerEntityHeadLook headLook = new WrapperPlayServerEntityHeadLook(
+        // Turn the head
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityHeadLook(
             entityId,
             location.getYaw()
-        );
+        ));
 
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, playerInfo);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawnPlayer);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, headLook);
+        // Equipment
+        if (!equipment.isEmpty()) {
+            PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityEquipment(
+                    entityId,
+                    new ArrayList<>(equipment.values())
+            ));
+        }
 
-        // Remove npc from tab list
-        WrapperPlayServerPlayerInfo removePlayerInfo = new WrapperPlayServerPlayerInfo(
-                WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER,
-                new WrapperPlayServerPlayerInfo.PlayerData(Component.text(name), new UserProfile(uuid, name, new ArrayList<>(textures.values())), GameMode.SURVIVAL, 0)
-        );
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> PacketEvents.getAPI().getPlayerManager().sendPacket(player, removePlayerInfo), 100);
+        // Remove npc from tab list after 5 seconds, after the player has spawned in
+        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerPlayerInfo(
+                        WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER,
+                        new WrapperPlayServerPlayerInfo.PlayerData(Component.text(name), new UserProfile(uuid, name, new ArrayList<>(textures.values())), GameMode.SURVIVAL, 0)
+                )),
+        100);
     }
 
     public void showToAllNearbyPlayers() {
@@ -115,11 +154,9 @@ public class NPC {
     }
 
     public void hideFrom(Player player) {
-        WrapperPlayServerDestroyEntities destroyEntity = new WrapperPlayServerDestroyEntities(
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerDestroyEntities(
                 entityId
-        );
-
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, destroyEntity);
+        ));
     }
 
     public void hideFromAllNearbyPlayers() {
@@ -136,27 +173,57 @@ public class NPC {
         float yaw = (float) Math.toDegrees(Math.atan2(-difference.getX(), difference.getZ()));
         float pitch = (float) Math.toDegrees(Math.atan2(-difference.getY(), Math.sqrt(difference.getX() * difference.getX() + difference.getZ() * difference.getZ())));
 
+        if (lookingAt.add(player.getUniqueId())) {
+            dispatchLookAtEvent(player);
+        }
+
         sendLookAt(player, yaw, pitch);
     }
 
     public void stopLookingAt(Player player) {
+        lookingAt.remove(player.getUniqueId());
         sendLookAt(player, location.getYaw(), location.getPitch());
     }
 
     private void sendLookAt(Player player, float yaw, float pitch) {
-        WrapperPlayServerEntityHeadLook headLook = new WrapperPlayServerEntityHeadLook(
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityHeadLook(
                 entityId,
                 yaw
-        );
+        ));
 
-        WrapperPlayServerEntityRotation rotation = new WrapperPlayServerEntityRotation(
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityRotation(
                 entityId,
                 yaw,
                 pitch,
                 true
-        );
+        ));
+    }
 
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, headLook);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, rotation);
+    public void addClickListener(Plugin plugin, BiConsumer<NPC, Player> onClick) {
+        clickListeners.add(new ObjectObjectImmutablePair<>(plugin, onClick));
+    }
+
+    public void dispatchClickEvent(Player player) {
+        dispatchEventToListeners(player, clickListeners);
+    }
+
+    public void addLookAtListener(Plugin plugin, BiConsumer<NPC, Player> onClick) {
+        lookAtListeners.add(new ObjectObjectImmutablePair<>(plugin, onClick));
+    }
+
+    public void dispatchLookAtEvent(Player player) {
+        dispatchEventToListeners(player, lookAtListeners);
+    }
+
+    private void dispatchEventToListeners(Player player, List<Pair<Plugin, BiConsumer<NPC, Player>>> listeners) {
+        for (Pair<Plugin, BiConsumer<NPC, Player>> pair : listeners) {
+            try {
+                if (pair.left().isEnabled()) {
+                    pair.right().accept(this, player);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

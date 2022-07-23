@@ -2,7 +2,6 @@ package xyz.critterz.holonpc;
 
 import com.github.puregero.multilib.MultiLib;
 import com.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -19,6 +18,7 @@ public class HoloNPCPlugin extends JavaPlugin {
         configLoader = new NPCConfigLoader(this);
         new NPCListener(this);
         new NPCCommand(this);
+        PacketEvents.getAPI().getEventManager().registerListener(new NPCPacketListener(this));
     }
 
     @Override

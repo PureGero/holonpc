@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public class NPCManager {
     private final HashMap<UUID, NPC> npcs = new HashMap<>();
+    private final HashMap<Integer, NPC> npcsByEntityId = new HashMap<>();
     private final HashMap<String, ChunkBasedAreaMap<NPC>> worldToNpcs = new HashMap<>();
     private final HashMap<String, AreaMap<NPC>> worldToNearNpcs = new HashMap<>();
 
@@ -37,6 +38,7 @@ public class NPCManager {
 
     public void registerNPC(NPC npc) {
         npcs.put(npc.getUniqueId(), npc);
+        npcsByEntityId.put(npc.getEntityId(), npc);
         worldToNpcs
                 .computeIfAbsent(npc.getLocation().getWorld().getName(), world -> new ChunkBasedAreaMap<>(64))
                 .addObject(npc, npc.getLocation().getBlockX(), npc.getLocation().getBlockZ());
@@ -47,6 +49,7 @@ public class NPCManager {
 
     public void unregisterNPC(NPC npc) {
         npcs.remove(npc.getUniqueId());
+        npcsByEntityId.remove(npc.getEntityId());
         worldToNpcs.get(npc.getLocation().getWorld().getName()).removeObject(npc);
         worldToNearNpcs.get(npc.getLocation().getWorld().getName()).removeObject(npc);
     }
@@ -105,5 +108,9 @@ public class NPCManager {
 
     public NPC getNPC(UUID uuid) {
         return npcs.get(uuid);
+    }
+
+    public NPC getNPC(int entityId) {
+        return npcsByEntityId.get(entityId);
     }
 }
