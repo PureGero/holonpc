@@ -20,7 +20,6 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -99,6 +98,10 @@ public class NPC {
 
     public Map<String, TextureProperty> getTextures() {
         return textures;
+    }
+
+    public void setTexture(String key, String value, @Nullable String signature) {
+        setTexture(new TextureProperty(key, value ,signature));
     }
 
     public void setTexture(TextureProperty textureProperty) {
