@@ -11,6 +11,7 @@ import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRotation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
@@ -19,6 +20,7 @@ import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -67,9 +69,6 @@ public class NPC {
         this.name = name;
         this.entityId = new Random(this.uuid.getLeastSignificantBits() ^ this.uuid.getMostSignificantBits()).nextInt();
         this.location = new Location(world, x, y, z, yaw, pitch);
-
-        this.addClickListener(plugin, (npc, player) -> player.sendMessage(Component.text("You have clicked " + npc.getEntityId())));
-        this.addLookAtListener(plugin, (npc, player) -> player.sendMessage(Component.text("You are looking at " + npc.getEntityId())));
     }
 
     public String getName() {
@@ -117,14 +116,19 @@ public class NPC {
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerSpawnPlayer(
                 entityId,
                 uuid,
-                SpigotConversionUtil.fromBukkitLocation(location),
-                new PlayerDataProvider.PlayerBuilder<>(new PlayerDataProvider()).skinPartsMask((byte) 126).build().encode()
+                SpigotConversionUtil.fromBukkitLocation(location)
         ));
 
         // Turn the head
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityHeadLook(
             entityId,
             location.getYaw()
+        ));
+
+        // Show second layer of skin
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerEntityMetadata(
+                entityId,
+                new PlayerDataProvider.PlayerBuilder<>(new PlayerDataProvider()).skinPartsMask((byte) 126).build().encode()
         ));
 
         // Equipment
