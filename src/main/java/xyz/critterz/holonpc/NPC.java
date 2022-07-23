@@ -51,7 +51,7 @@ public class NPC {
     private final List<Pair<Plugin, BiConsumer<NPC, Player>>> clickListeners = new ArrayList<>();
     private final HashMap<EquipmentSlot, Equipment> equipment = new HashMap<>();
 
-    public NPC(HoloNPCPlugin plugin, World world, UUID uuid, @Nullable String name, double x, double y, double z, float yaw, float pitch) {
+    public NPC(HoloNPCPlugin plugin, Location location, UUID uuid, @Nullable String name) {
         this.plugin = plugin;
 
         if (name == null || name.equals("HoloNPC")) {
@@ -67,7 +67,7 @@ public class NPC {
         this.uuid = uuid;
         this.name = name;
         this.entityId = new Random(this.uuid.getLeastSignificantBits() ^ this.uuid.getMostSignificantBits()).nextInt();
-        this.location = new Location(world, x, y, z, yaw, pitch);
+        this.location = location;
     }
 
     public String getName() {

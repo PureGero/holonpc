@@ -105,7 +105,7 @@ public class NPCCommand implements CommandExecutor {
             return;
         }
 
-        NPC npc = new NPC(plugin, location.getWorld(), UUID.randomUUID(), name, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        NPC npc = new NPC(plugin, location, UUID.randomUUID(), name);
         plugin.getNPCManager().registerNPC(npc);
         npc.showToAllNearbyPlayers();
         plugin.getConfigLoader().addNPC(npc);

@@ -1,6 +1,7 @@
 package xyz.critterz.holonpc;
 
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
+import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.util.ArrayList;
@@ -35,14 +36,16 @@ public class NPCSerializer {
     public NPC deserialize(World world, Map<?,?> map) {
         NPC npc = new NPC(
                 plugin,
-                world,
+                new Location(
+                        world,
+                        Double.parseDouble(map.get("x").toString()),
+                        Double.parseDouble(map.get("y").toString()),
+                        Double.parseDouble(map.get("z").toString()),
+                        Float.parseFloat(map.get("yaw").toString()),
+                        Float.parseFloat(map.get("pitch").toString())
+                ),
                 UUID.fromString(map.get("uuid").toString()),
-                map.get("name").toString(),
-                Double.parseDouble(map.get("x").toString()),
-                Double.parseDouble(map.get("y").toString()),
-                Double.parseDouble(map.get("z").toString()),
-                Float.parseFloat(map.get("yaw").toString()),
-                Float.parseFloat(map.get("pitch").toString())
+                map.get("name").toString()
         );
 
         if (map.containsKey("properties") && map.get("properties") instanceof Iterable<?> properties) {
