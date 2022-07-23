@@ -79,13 +79,13 @@ public class NPCConfigLoader {
 
     public void addNPC(NPC npc) {
         Map<?, ?> serializedNPC = plugin.getSerializer().serialize(npc);
-        List<Map<?, ?>> mapList = plugin.getConfig().getMapList("npcs." + npc.getPlayer().getWorld().getName());
+        List<Map<?, ?>> mapList = plugin.getConfig().getMapList("npcs." + npc.getLocation().getWorld().getName());
         mapList.add(serializedNPC);
-        plugin.getConfig().set("npcs." + npc.getPlayer().getWorld().getName(), mapList);
+        plugin.getConfig().set("npcs." + npc.getLocation().getWorld().getName(), mapList);
         plugin.saveConfig();
 
         Map<Object, Object> toSend = new HashMap<>(serializedNPC);
-        toSend.put("world", npc.getPlayer().getWorld().getName());
+        toSend.put("world", npc.getLocation().getWorld().getName());
         MultiLib.notify("holonpc:addnpc", serializeObject(toSend));
     }
 
@@ -94,18 +94,18 @@ public class NPCConfigLoader {
     }
 
     private void removeNPC(NPC npc, boolean broadcastChanges) {
-        List<Map<?, ?>> mapList = plugin.getConfig().getMapList("npcs." + npc.getPlayer().getWorld().getName());
+        List<Map<?, ?>> mapList = plugin.getConfig().getMapList("npcs." + npc.getLocation().getWorld().getName());
         for (Map<?, ?> map : mapList) {
-            if (npc.getPlayer().getUniqueId().toString().equals(map.get("uuid"))) {
+            if (npc.getUniqueId().toString().equals(map.get("uuid"))) {
                 mapList.remove(map);
                 break;
             }
         }
-        plugin.getConfig().set("npcs." + npc.getPlayer().getWorld().getName(), mapList);
+        plugin.getConfig().set("npcs." + npc.getLocation().getWorld().getName(), mapList);
         plugin.saveConfig();
 
         if (broadcastChanges) {
-            MultiLib.notify("holonpc:removenpc", npc.getPlayer().getUniqueId().toString());
+            MultiLib.notify("holonpc:removenpc", npc.getUniqueId().toString());
         }
     }
 }

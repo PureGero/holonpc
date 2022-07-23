@@ -4,9 +4,11 @@ description: ${project.description}
 main: ${project.groupId}.${project.name}Plugin
 author: PureGero
 api-version: 1.18
-load: STARTUP
+load: POSTWORLD
 softdepend:
   - SkinsRestorer
+depend:
+  - packetevents
 commands:
   npc:
     description: NPC Command

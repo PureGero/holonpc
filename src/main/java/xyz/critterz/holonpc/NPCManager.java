@@ -36,19 +36,19 @@ public class NPCManager {
     }
 
     public void registerNPC(NPC npc) {
-        npcs.put(npc.getPlayer().getUniqueId(), npc);
+        npcs.put(npc.getUniqueId(), npc);
         worldToNpcs
-                .computeIfAbsent(npc.getPlayer().getWorld().getName(), world -> new ChunkBasedAreaMap<>(64))
-                .addObject(npc, npc.getPlayer().getLocation().getBlockX(), npc.getPlayer().getLocation().getBlockZ());
+                .computeIfAbsent(npc.getLocation().getWorld().getName(), world -> new ChunkBasedAreaMap<>(64))
+                .addObject(npc, npc.getLocation().getBlockX(), npc.getLocation().getBlockZ());
         worldToNearNpcs
-                .computeIfAbsent(npc.getPlayer().getWorld().getName(), world -> new AreaMap<>(3))
-                .addObject(npc, npc.getPlayer().getLocation().getBlockX(), npc.getPlayer().getLocation().getBlockZ());
+                .computeIfAbsent(npc.getLocation().getWorld().getName(), world -> new AreaMap<>(3))
+                .addObject(npc, npc.getLocation().getBlockX(), npc.getLocation().getBlockZ());
     }
 
     public void unregisterNPC(NPC npc) {
-        npcs.remove(npc.getPlayer().getUniqueId());
-        worldToNpcs.get(npc.getPlayer().getWorld().getName()).removeObject(npc);
-        worldToNearNpcs.get(npc.getPlayer().getWorld().getName()).removeObject(npc);
+        npcs.remove(npc.getUniqueId());
+        worldToNpcs.get(npc.getLocation().getWorld().getName()).removeObject(npc);
+        worldToNearNpcs.get(npc.getLocation().getWorld().getName()).removeObject(npc);
     }
 
 
@@ -99,7 +99,7 @@ public class NPCManager {
         }
 
         for (NPC nearNPC : nearNPCs) {
-            nearNPC.lookAt(player);
+            nearNPC.sendLookAt(player);
         }
     }
 

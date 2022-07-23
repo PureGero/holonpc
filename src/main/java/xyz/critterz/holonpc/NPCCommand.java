@@ -1,7 +1,6 @@
 package xyz.critterz.holonpc;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.skinsrestorer.api.SkinsRestorerAPI;
@@ -140,7 +139,7 @@ public class NPCCommand implements CommandExecutor {
         plugin.getNPCManager().unregisterNPC(npc);
         plugin.getConfigLoader().removeNPC(npc);
 
-        player.sendMessage(Component.text("Removed npc " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
+        player.sendMessage(Component.text("Removed npc " + npc.getName()).color(NamedTextColor.GREEN));
     }
 
     private double parseCenteredDouble(String number) {
@@ -169,8 +168,8 @@ public class NPCCommand implements CommandExecutor {
         double nearestDistance = Double.MAX_VALUE;
 
         for (NPC npc : nearbyNPCs) {
-            if (npc.getPlayer().getWorld().equals(location.getWorld())) {
-                double distance = npc.getPlayer().getLocation().distanceSquared(location);
+            if (npc.getLocation().getWorld().equals(location.getWorld())) {
+                double distance = npc.getLocation().distanceSquared(location);
                 if (distance < nearestDistance) {
                     nearestDistance = distance;
                     nearestNPC = npc;
@@ -188,13 +187,12 @@ public class NPCCommand implements CommandExecutor {
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 try {
                     IProperty property = SkinsRestorerAPI.getApi().genSkinUrl(url, null);
-                    GameProfile gameProfile = npc.getProfile();
-                    gameProfile.getProperties().put(property.getName(), new Property(property.getName(), property.getValue(), property.getSignature()));
+                    npc.setTexture(new TextureProperty(property.getName(), property.getValue(), property.getSignature()));
                     npc.hideFromAllNearbyPlayers();
                     npc.showToAllNearbyPlayers();
                     plugin.getConfigLoader().removeNPC(npc);
                     plugin.getConfigLoader().addNPC(npc);
-                    player.sendMessage(Component.text("Skin has been applied to NPC " + npc.getPlayer().getName()).color(NamedTextColor.GREEN));
+                    player.sendMessage(Component.text("Skin has been applied to NPC " + npc.getName()).color(NamedTextColor.GREEN));
                 } catch (SkinRequestException e) {
                     e.printStackTrace();
                     player.sendMessage(Component.text("Error: " + e.getClass().getSimpleName() + ": " + e.getMessage()).color(NamedTextColor.RED));

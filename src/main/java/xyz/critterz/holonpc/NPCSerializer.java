@@ -1,10 +1,13 @@
 package xyz.critterz.holonpc;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import org.bukkit.World;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class NPCSerializer {
 
@@ -43,11 +46,10 @@ public class NPCSerializer {
         );
 
         if (map.containsKey("properties") && map.get("properties") instanceof Iterable<?> properties) {
-            GameProfile profile = npc.getProfile();
             for (Object entry : properties) {
                 try {
                     if (entry instanceof Map<?, ?> property) {
-                        profile.getProperties().put((String) property.get("name"), new Property((String) property.get("name"), (String) property.get("value"), (String) property.get("signature")));
+                        npc.setTexture(new TextureProperty((String) property.get("name"), (String) property.get("value"), (String) property.get("signature")));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -60,16 +62,16 @@ public class NPCSerializer {
 
     public Map<?, ?> serialize(NPC npc) {
         Map<String, Object> map = new HashMap<>();
-        map.put("uuid", npc.getPlayer().getUniqueId().toString());
-        map.put("name", npc.getPlayer().getName());
-        map.put("x", npc.getPlayer().getLocation().getX());
-        map.put("y", npc.getPlayer().getLocation().getY());
-        map.put("z", npc.getPlayer().getLocation().getZ());
-        map.put("yaw", npc.getPlayer().getLocation().getYaw());
-        map.put("pitch", npc.getPlayer().getLocation().getPitch());
+        map.put("uuid", npc.getUniqueId().toString());
+        map.put("name", npc.getName());
+        map.put("x", npc.getLocation().getX());
+        map.put("y", npc.getLocation().getY());
+        map.put("z", npc.getLocation().getZ());
+        map.put("yaw", npc.getLocation().getYaw());
+        map.put("pitch", npc.getLocation().getPitch());
 
         List<Object> properties = new ArrayList<>();
-        for (Property property : npc.getProfile().getProperties().values()) {
+        for (TextureProperty property : npc.getTextures().values()) {
             Map<String, Object> propertyMap = new HashMap<>();
             propertyMap.put("name", property.getName());
             propertyMap.put("value", property.getValue());
